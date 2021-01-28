@@ -4,7 +4,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/react-native-webrtc.svg?maxAge=2592000)](https://img.shields.io/npm/dm/react-native-webrtc.svg?maxAge=2592000)
 
 A WebRTC module for React Native.
-- Support iOS / Android.
+- Support iOS / macOS / Android.
 - Support Video / Audio / Data Channels.
 
 **NOTE** for Expo users: this plugin doesn't work unless you eject.
@@ -15,10 +15,11 @@ Everyone is welcome to our [Discourse community](https://react-native-webrtc.dis
 
 ## WebRTC Revision
 
-* Currently used revision: [M84](https://github.com/jitsi/webrtc/commit/dc40d5cc81e8fe9aa1cd78a38ee8bb9e91ec49a0)
+* Currently used revision: [M87](https://github.com/jitsi/webrtc/commit/9a88667ef7b46c175851506453c6cc6b642292cc)
 * Supported architectures
   * Android: armeabi-v7a, arm64-v8a, x86, x86_64
   * iOS: arm64, x86_64 (for bitcode support, run [this script](https://github.com/react-native-webrtc/react-native-webrtc/blob/master/tools/downloadBitcode.sh))
+  * macOS: x86_64
 
 ## Installation
 
