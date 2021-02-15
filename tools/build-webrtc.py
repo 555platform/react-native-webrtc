@@ -21,7 +21,7 @@ IOS_ARCH_MAP = {
     'arm64': 'ios-arm64',
     'x64'  : 'ios-x86_64-simulator'
 }
-IOS_BUILD_ARCHS = ['arm64','x64']
+IOS_BUILD_ARCHS = ['arm64', 'x64']
 
 def build_gn_args(platform_args):
     return "--args='" + ' '.join(GN_COMMON_ARGS + platform_args) + "'"
@@ -102,7 +102,7 @@ def setup(target_dir, platform):
         print('Fetching WebRTC for %s...' % platform)
         sh('fetch --nohooks webrtc_%s' % platform, env)
 
-    # Run glient
+    # Run gclient
     sh('gclient sync', env)
 
     # Install dependencies
@@ -126,7 +126,7 @@ def sync(target_dir, platform):
     path_parts = [env['PATH'], depot_tools_dir]
     if platform == 'android':
         # Same as . build/android/envsetup.sh
-        android_sdk_root = os.path.join(webrtc_dir, 'third_party/android_tools/sdk')
+        android_sdk_root = os.path.join(webrtc_dir, 'third_party/android_sdk/public')
         path_parts.append(os.path.join(android_sdk_root, 'platform-tools'))
         path_parts.append(os.path.join(android_sdk_root, 'tools'))
         path_parts.append(os.path.join(webrtc_dir, 'build/android'))
@@ -152,7 +152,7 @@ def build(target_dir, platform, debug):
     path_parts = [env['PATH'], depot_tools_dir]
     if platform == 'android':
         # Same as . build/android/envsetup.sh
-        android_sdk_root = os.path.join(webrtc_dir, 'third_party/android_tools/sdk')
+        android_sdk_root = os.path.join(webrtc_dir, 'third_party/android_sdk/public')
         path_parts.append(os.path.join(android_sdk_root, 'platform-tools'))
         path_parts.append(os.path.join(android_sdk_root, 'tools'))
         path_parts.append(os.path.join(webrtc_dir, 'build/android'))

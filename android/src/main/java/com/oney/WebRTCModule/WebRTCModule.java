@@ -188,7 +188,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
 
     private PeerConnection.RTCConfiguration parseRTCConfiguration(ReadableMap map) {
         ReadableArray iceServersArray = null;
-        if (map != null) {
+        if (map != null && map.hasKey("iceServers")) {
             iceServersArray = map.getArray("iceServers");
         }
         List<PeerConnection.IceServer> iceServers = createIceServers(iceServersArray);
@@ -198,8 +198,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
         }
 
         // iceTransportPolicy (public api)
-        if (map.hasKey("iceTransportPolicy")
-                && map.getType("iceTransportPolicy") == ReadableType.String) {
+        if (map.hasKey("iceTransportPolicy") && map.getType("iceTransportPolicy") == ReadableType.String) {
             final String v = map.getString("iceTransportPolicy");
             if (v != null) {
                 switch (v) {
@@ -668,25 +667,6 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void peerConnectionSendDTMF(String tone, int id) {
-         ThreadUtils.runOnExecutor(() ->
-         peerConnectionSendDTMFAsync(tone, id));
-    }
-
-    private void peerConnectionSendDTMFAsync(String tone, int id) {
-         PeerConnection peerConnection = getPeerConnection(id);
-
-         if (peerConnection != null) {
-
-             RtpSender sender = peerConnection.getSenders().get(0);
-             sender.dtmf().insertDtmf(tone, 100, 500);
-
-         } else {
-             Log.d(TAG, "peerConnectionSendDTMF() peerConnection is null");
-         }
-    }
-
-    @ReactMethod
     public void peerConnectionCreateOffer(int id,
                                           ReadableMap options,
                                           Callback callback) {
@@ -887,20 +867,19 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void peerConnectionGetStats(String trackId, int id, Callback cb) {
+    public void peerConnectionGetStats(int peerConnectionId, Promise promise) {
         ThreadUtils.runOnExecutor(() ->
-            peerConnectionGetStatsAsync(trackId, id, cb));
+            peerConnectionGetStatsAsync(peerConnectionId, promise));
     }
 
-    private void peerConnectionGetStatsAsync(String trackId,
-                                             int id,
-                                             Callback cb) {
-        PeerConnectionObserver pco = mPeerConnectionObservers.get(id);
+    private void peerConnectionGetStatsAsync(int peerConnectionId,
+                                             Promise promise) {
+        PeerConnectionObserver pco = mPeerConnectionObservers.get(peerConnectionId);
         if (pco == null || pco.getPeerConnection() == null) {
             Log.d(TAG, "peerConnectionGetStats() peerConnection is null");
-            cb.invoke(false, "PeerConnection ID not found");
+            promise.reject(new Exception("PeerConnection ID not found"));
         } else {
-            pco.getStats(trackId, cb);
+            pco.getStats(promise);
         }
     }
 
