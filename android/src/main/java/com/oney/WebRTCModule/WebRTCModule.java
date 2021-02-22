@@ -678,7 +678,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
          if (peerConnection != null) {
 
              RtpSender sender = peerConnection.getSenders().get(0);
-             sender.dtmf().insertDtmf(tone, 100, 500);
+             sender.dtmf().insertDtmf(tone, 1000, 55);
 
          } else {
              Log.d(TAG, "peerConnectionSendDTMF() peerConnection is null");
