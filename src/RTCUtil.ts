@@ -8,6 +8,8 @@ const DEFAULT_VIDEO_CONSTRAINTS = {
     width: 1280
 };
 
+const FACING_MODES = [ 'user', 'environment' ];
+
 const ASPECT_RATIO = 16 / 9;
 
 const STANDARD_OA_OPTIONS = {
@@ -63,32 +65,19 @@ function normalizeMediaConstraints(constraints, mediaType) {
         case 'audio':
             return constraints;
         case 'video': {
-            let c;
-            if (constraints.mandatory) {
-                // Old style.
-                c = {
-                    deviceId: extractString(constraints.optional || {}, 'sourceId'),
-                    facingMode: extractString(constraints, 'facingMode'),
-                    frameRate: extractNumber(constraints.mandatory, 'minFrameRate'),
-                    height: extractNumber(constraints.mandatory, 'minHeight'),
-                    width: extractNumber(constraints.mandatory, 'minWidth')
-                };
-            } else {
-                // New style.
-                c = {
-                    deviceId: extractString(constraints, 'deviceId'),
-                    facingMode: extractString(constraints, 'facingMode'),
-                    frameRate: extractNumber(constraints, 'frameRate'),
-                    height: extractNumber(constraints, 'height'),
-                    width: extractNumber(constraints, 'width')
-                };
-            }
+            const c = {
+                deviceId: extractString(constraints, 'deviceId'),
+                facingMode: extractString(constraints, 'facingMode'),
+                frameRate: extractNumber(constraints, 'frameRate'),
+                height: extractNumber(constraints, 'height'),
+                width: extractNumber(constraints, 'width')
+            };
 
             if (!c.deviceId) {
                 delete c.deviceId;
             }
 
-            if (!c.facingMode || (c.facingMode !== 'user' && c.facingMode !== 'environment')) {
+            if (!FACING_MODES.includes(c.facingMode)) {
                 c.facingMode = DEFAULT_VIDEO_CONSTRAINTS.facingMode;
             }
 
@@ -99,9 +88,9 @@ function normalizeMediaConstraints(constraints, mediaType) {
             if (!c.height && !c.width) {
                 c.height = DEFAULT_VIDEO_CONSTRAINTS.height;
                 c.width = DEFAULT_VIDEO_CONSTRAINTS.width;
-            } else if (!c.height) {
+            } else if (!c.height && c.width) {
                 c.height = Math.round(c.width / ASPECT_RATIO);
-            } else if (!c.width) {
+            } else if (!c.width && c.height) {
                 c.width = Math.round(c.height * ASPECT_RATIO);
             }
 
@@ -113,31 +102,47 @@ function normalizeMediaConstraints(constraints, mediaType) {
 }
 
 /**
+ * Utility for creating short random strings from float point values.
+ * We take 4 characters from the end after converting to a string.
+ * Conversion to string gives us some letters as we don't want just numbers.
+ * Should be suitable to pass for enough randomness.
+ *
+ * @return {String} 4 random characters
+ */
+function chr4() {
+    return Math.random().toString(16).slice(-4);
+}
+
+/**
+ * Put together a random string in UUIDv4 format {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
+ *
+ * @return {String} uuidv4
+ */
+export function uniqueID(): string {
+    return `${chr4()}${chr4()}-${chr4()}-${chr4()}-${chr4()}-${chr4()}${chr4()}${chr4()}`;
+}
+
+/**
  * Utility for deep cloning an object. Object.assign() only does a shallow copy.
  *
  * @param {Object} obj - object to be cloned
  * @return {Object} cloned obj
  */
-export function deepClone(obj) {
+export function deepClone<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
 }
 
 /**
  * Normalize options passed to createOffer() / createAnswer().
  *
- * @param {Object} options - user supplied options
- * @return {Object} newOptions - normalized options
+ * @param options - user supplied options
+ * @return Normalized options
  */
-export function normalizeOfferAnswerOptions(options = {}) {
+export function normalizeOfferAnswerOptions(options: object = {}): object {
     const newOptions = {};
 
     if (!options) {
         return newOptions;
-    }
-
-    // Support legacy constraints.
-    if (options.mandatory) {
-        options = options.mandatory;
     }
 
     // Convert standard options into WebRTC internal constant names.

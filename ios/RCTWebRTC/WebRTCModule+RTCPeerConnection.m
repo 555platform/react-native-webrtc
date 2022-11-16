@@ -12,8 +12,6 @@
 #import <React/RCTLog.h>
 #import <React/RCTUtils.h>
 
-#import <WebRTC/RTCAudioSession.h>
-#import <WebRTC/RTCRtpSender.h>
 #import <WebRTC/RTCConfiguration.h>
 #import <WebRTC/RTCIceCandidate.h>
 #import <WebRTC/RTCIceServer.h>
@@ -149,30 +147,6 @@ RCT_EXPORT_METHOD(peerConnectionRemoveStream:(nonnull NSString *)streamID object
   [peerConnection removeStream:stream];
 }
 
-RCT_EXPORT_METHOD(peerConnectionSendDTMF:(nonnull NSString *)tone objectID:(nonnull NSNumber *)objectID)
-{
-  //   NSLog(@"Webrtc :: peerConnectionSendDTMF");
-  RTCPeerConnection *peerConnection = self.peerConnections[objectID];
-  if (!peerConnection) {
-    return;
-  }
-
-   RTCRtpSender *sender = peerConnection.senders[0];
-  [sender.dtmfSender insertDtmf:tone duration:1 interToneGap:0.055];
-}
-
-RCT_EXPORT_METHOD(initializeAudio:(BOOL) value)
-{
- //   NSLog(@"Webrtc :: initialize audio");
-    RTCAudioSession *session = [RTCAudioSession sharedInstance];
-    session.useManualAudio = value;
-}
-
-RCT_EXPORT_METHOD(enableAudio:(BOOL) value)
-{
-  //  NSLog(@"Webrtc :: enable audio");
-    [RTCAudioSession sharedInstance].isAudioEnabled = value;
-}
 
 RCT_EXPORT_METHOD(peerConnectionCreateOffer:(nonnull NSNumber *)objectID
                                     options:(NSDictionary *)options
@@ -470,6 +444,8 @@ RCT_EXPORT_METHOD(peerConnectionRestartIce:(nonnull NSNumber *)objectID)
             NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
             [s appendString:jsonString];
         }
+    } else if ([statisticsValue isKindOfClass:[NSNumber class]]) {
+        [s appendString:[NSString stringWithFormat:@"%@", statisticsValue]];
     } else {
         [s appendString:@"\""];
         [s appendString:[NSString stringWithFormat:@"%@", statisticsValue]];
@@ -539,7 +515,7 @@ RCT_EXPORT_METHOD(peerConnectionRestartIce:(nonnull NSNumber *)objectID)
   NSMutableArray *tracks = [NSMutableArray array];
   for (RTCVideoTrack *track in stream.videoTracks) {
     peerConnection.remoteTracks[track.trackId] = track;
-    [peerConnection addVideoTrackAdapter:streamReactTag track:track];
+    [peerConnection addVideoTrackAdapter:track];
     [tracks addObject:@{@"id": track.trackId, @"kind": track.kind, @"label": track.trackId, @"enabled": @(track.isEnabled), @"remote": @(YES), @"readyState": @"live"}];
   }
   for (RTCAudioTrack *track in stream.audioTracks) {
