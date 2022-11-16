@@ -32,6 +32,7 @@
         "url": "https://github.com/react-native-webrtc/react-native-webrtc/issues"
     },
     "dependencies": {
+        "adm-zip": "^0.5.9",
         "base64-js": "1.5.1",
         "event-target-shim": "6.0.2",
         "tar": "6.1.11",
@@ -62,7 +63,6 @@
         "**/*": "prettier --write --ignore-unknown"
     },
     "main": "src/index.js",
-    
     "nativePackage": true,
     "peerDependencies": {
         "react-native": ">=0.60.0"
@@ -76,6 +76,7 @@
         "prepare": "husky install"
     },
     "webrtc-builds": {
-        "android": "https://github.com/jitsi/webrtc/releases/download/v106.0.0/android-webrtc.tgz"
+        "android": "https://github.com/jitsi/webrtc/releases/download/v106.0.0/android-webrtc.zip",
+        "ios": "https://github.com/jitsi/webrtc/releases/download/v106.0.0/WebRTC.xcframework.zip"
     }
 }
