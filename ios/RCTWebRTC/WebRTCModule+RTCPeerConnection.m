@@ -12,6 +12,8 @@
 #import <React/RCTLog.h>
 #import <React/RCTUtils.h>
 
+#import <WebRTC/RTCAudioSession.h>
+#import <WebRTC/RTCRtpSender.h>
 #import <WebRTC/RTCConfiguration.h>
 #import <WebRTC/RTCIceCandidate.h>
 #import <WebRTC/RTCIceServer.h>
@@ -147,6 +149,30 @@ RCT_EXPORT_METHOD(peerConnectionRemoveStream:(nonnull NSString *)streamID object
   [peerConnection removeStream:stream];
 }
 
+RCT_EXPORT_METHOD(peerConnectionSendDTMF:(nonnull NSString *)tone objectID:(nonnull NSNumber *)objectID)
+{
+  //   NSLog(@"Webrtc :: peerConnectionSendDTMF");
+  RTCPeerConnection *peerConnection = self.peerConnections[objectID];
+  if (!peerConnection) {
+    return;
+  }
+
+   RTCRtpSender *sender = peerConnection.senders[0];
+  [sender.dtmfSender insertDtmf:tone duration:1 interToneGap:0.055];
+}
+
+RCT_EXPORT_METHOD(initializeAudio:(BOOL) value)
+{
+ //   NSLog(@"Webrtc :: initialize audio");
+    RTCAudioSession *session = [RTCAudioSession sharedInstance];
+    session.useManualAudio = value;
+}
+
+RCT_EXPORT_METHOD(enableAudio:(BOOL) value)
+{
+  //  NSLog(@"Webrtc :: enable audio");
+    [RTCAudioSession sharedInstance].isAudioEnabled = value;
+}
 
 RCT_EXPORT_METHOD(peerConnectionCreateOffer:(nonnull NSNumber *)objectID
                                     options:(NSDictionary *)options

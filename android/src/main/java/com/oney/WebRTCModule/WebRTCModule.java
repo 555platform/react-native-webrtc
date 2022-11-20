@@ -655,6 +655,27 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void peerConnectionSendDTMF(String tone, int id) {
+         ThreadUtils.runOnExecutor(() -> {
+         peerConnectionSendDTMFAsync(tone, id)
+        });
+    }
+
+    private void peerConnectionSendDTMFAsync(String tone, int id) {
+         PeerConnection peerConnection = getPeerConnection(id);
+
+         if (peerConnection != null) {
+
+             RtpSender sender = peerConnection.getSenders().get(0);
+             sender.dtmf().insertDtmf(tone, 1000, 55);
+
+         } else {
+             Log.d(TAG, "peerConnectionSendDTMF() peerConnection is null");
+         }
+    }
+
+
+    @ReactMethod
     public void peerConnectionCreateOffer(int id,
                                           ReadableMap options,
                                           Callback callback) {
