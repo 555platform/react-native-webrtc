@@ -657,7 +657,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void peerConnectionSendDTMF(String tone, int id) {
          ThreadUtils.runOnExecutor(() -> {
-         peerConnectionSendDTMFAsync(tone, id)
+         peerConnectionSendDTMFAsync(tone, id);
         });
     }
 
