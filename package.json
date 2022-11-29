@@ -1,6 +1,6 @@
 {
   "name": "react-native-webrtc",
-  "version": "1.94.1",
+  "version": "1.100.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/react-native-webrtc/react-native-webrtc.git"
@@ -27,6 +27,7 @@
     "react-native": ">=0.60.0"
   },
   "scripts": {
+    "check": "tsc --noEmit",
     "postinstall": "node tools/downloadWebRTC.js",
     "prepare": "husky install"
   },
@@ -34,16 +35,31 @@
     "url": "https://github.com/react-native-webrtc/react-native-webrtc/issues"
   },
   "devDependencies": {
+    "@tsconfig/react-native": "^2.0.2",
+    "@types/jest": "^29.2.3",
+    "@types/react": "^18.0.25",
+    "@types/react-native": "^0.70.6",
+    "@types/react-test-renderer": "^18.0.0",
     "husky": "7.0.2",
     "lint-staged": "11.2.3",
-    "prettier": "2.4.1"
+    "prettier": "2.4.1",
+    "react-native-builder-bob": "0.18.2",
+    "typescript": "^4.9.3"
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
   },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      "commonjs",
+      "module",
+      "typescript"
+    ]
+  },
   "webrtc-builds": {
-    "android": "https://github.com/jitsi/webrtc/releases/download/v94.0.0/android-webrtc.tgz",
-    "ios": "https://github.com/jitsi/webrtc/releases/download/v94.0.0/WebRTC.xcframework.tgz",
-    "ios-bitcode": "https://github.com/jitsi/webrtc/releases/download/v94.0.0/WebRTC.xcframework-bitcode.tgz"
+    "android": "https://github.com/jitsi/webrtc/releases/download/v100.0.0/android-webrtc.tgz",
+    "ios": "https://github.com/jitsi/webrtc/releases/download/v100.0.0/WebRTC.xcframework.tgz"
   }
 }

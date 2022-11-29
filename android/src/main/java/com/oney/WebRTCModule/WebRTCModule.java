@@ -210,6 +210,9 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
         // Required for perfect negotiation.
         conf.enableImplicitRollback = true;
 
+        // Plan B, just a little longer.
+        conf.sdpSemantics = PeerConnection.SdpSemantics.PLAN_B;
+
         if (map == null) {
             return conf;
         }
@@ -653,8 +656,9 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void peerConnectionSendDTMF(String tone, int id) {
-         ThreadUtils.runOnExecutor(() ->
-         peerConnectionSendDTMFAsync(tone, id));
+         ThreadUtils.runOnExecutor(() -> {
+         peerConnectionSendDTMFAsync(tone, id);
+        });
     }
 
     private void peerConnectionSendDTMFAsync(String tone, int id) {
@@ -669,6 +673,7 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
              Log.d(TAG, "peerConnectionSendDTMF() peerConnection is null");
          }
     }
+
 
     @ReactMethod
     public void peerConnectionCreateOffer(int id,
