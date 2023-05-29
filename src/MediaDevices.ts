@@ -12,7 +12,7 @@ const MEDIA_DEVICES_EVENTS = ['devicechange'];
 class MediaDevices extends defineCustomEventTarget(...MEDIA_DEVICES_EVENTS) {
     /**
      * W3C "Media Capture and Streams" compatible {@code enumerateDevices}
-     * implementation.
+     * implementation..
      */
     enumerateDevices() {
         return new Promise(resolve => WebRTCModule.enumerateDevices(resolve));
