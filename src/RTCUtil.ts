@@ -8,14 +8,23 @@ const DEFAULT_VIDEO_CONSTRAINTS = {
     width: 1280
 };
 
+const FACING_MODES = [ 'user', 'environment' ];
+
 const ASPECT_RATIO = 16 / 9;
 
-const STANDARD_OA_OPTIONS = {
+const STANDARD_OFFER_OPTIONS = {
     icerestart: 'IceRestart',
     offertoreceiveaudio: 'OfferToReceiveAudio',
     offertoreceivevideo: 'OfferToReceiveVideo',
     voiceactivitydetection: 'VoiceActivityDetection'
 };
+
+const SDP_TYPES = [
+    'offer',
+    'pranswer',
+    'answer',
+    'rollback'
+];
 
 function getDefaultMediaConstraints(mediaType) {
     switch (mediaType) {
@@ -33,7 +42,7 @@ function extractString(constraints, prop) {
     const type = typeof value;
 
     if (type === 'object') {
-        for (const v of ['exact', 'ideal']) {
+        for (const v of [ 'exact', 'ideal' ]) {
             if (value[v]) {
                 return value[v];
             }
@@ -50,7 +59,7 @@ function extractNumber(constraints, prop) {
     if (type === 'number') {
         return Number.parseInt(value);
     } else if (type === 'object') {
-        for (const v of ['exact', 'ideal', 'min', 'max']) {
+        for (const v of [ 'exact', 'ideal', 'max', 'min' ]) {
             if (value[v]) {
                 return Number.parseInt(value[v]);
             }
@@ -62,33 +71,21 @@ function normalizeMediaConstraints(constraints, mediaType) {
     switch (mediaType) {
         case 'audio':
             return constraints;
+
         case 'video': {
-            let c;
-            if (constraints.mandatory) {
-                // Old style.
-                c = {
-                    deviceId: extractString(constraints.optional || {}, 'sourceId'),
-                    facingMode: extractString(constraints, 'facingMode'),
-                    frameRate: extractNumber(constraints.mandatory, 'minFrameRate'),
-                    height: extractNumber(constraints.mandatory, 'minHeight'),
-                    width: extractNumber(constraints.mandatory, 'minWidth')
-                };
-            } else {
-                // New style.
-                c = {
-                    deviceId: extractString(constraints, 'deviceId'),
-                    facingMode: extractString(constraints, 'facingMode'),
-                    frameRate: extractNumber(constraints, 'frameRate'),
-                    height: extractNumber(constraints, 'height'),
-                    width: extractNumber(constraints, 'width')
-                };
-            }
+            const c = {
+                deviceId: extractString(constraints, 'deviceId'),
+                facingMode: extractString(constraints, 'facingMode'),
+                frameRate: extractNumber(constraints, 'frameRate'),
+                height: extractNumber(constraints, 'height'),
+                width: extractNumber(constraints, 'width')
+            };
 
             if (!c.deviceId) {
                 delete c.deviceId;
             }
 
-            if (!c.facingMode || (c.facingMode !== 'user' && c.facingMode !== 'environment')) {
+            if (!FACING_MODES.includes(c.facingMode)) {
                 c.facingMode = DEFAULT_VIDEO_CONSTRAINTS.facingMode;
             }
 
@@ -99,14 +96,15 @@ function normalizeMediaConstraints(constraints, mediaType) {
             if (!c.height && !c.width) {
                 c.height = DEFAULT_VIDEO_CONSTRAINTS.height;
                 c.width = DEFAULT_VIDEO_CONSTRAINTS.width;
-            } else if (!c.height) {
+            } else if (!c.height && c.width) {
                 c.height = Math.round(c.width / ASPECT_RATIO);
-            } else if (!c.width) {
+            } else if (!c.width && c.height) {
                 c.width = Math.round(c.height * ASPECT_RATIO);
             }
 
             return c;
         }
+
         default:
             throw new TypeError(`Invalid media type: ${mediaType}`);
     }
@@ -129,7 +127,7 @@ function chr4() {
  *
  * @return {String} uuidv4
  */
-export function uniqueID() {
+export function uniqueID(): string {
     return `${chr4()}${chr4()}-${chr4()}-${chr4()}-${chr4()}-${chr4()}${chr4()}${chr4()}`;
 }
 
@@ -139,36 +137,38 @@ export function uniqueID() {
  * @param {Object} obj - object to be cloned
  * @return {Object} cloned obj
  */
-export function deepClone(obj) {
+export function deepClone<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
 }
 
-interface Constraints {
-    mandatory?: object;
+/**
+ * Checks whether an SDP type is valid or not.
+ *
+ * @param type SDP type to check.
+ * @returns Whether the SDP type is valid or not.
+ */
+export function isSdpTypeValid(type: string): boolean {
+    return SDP_TYPES.includes(type);
 }
 
 /**
- * Normalize options passed to createOffer() / createAnswer().
+ * Normalize options passed to createOffer().
  *
- * @param {Object} options - user supplied options
- * @return {Object} newOptions - normalized options
+ * @param options - user supplied options
+ * @return Normalized options
  */
-export function normalizeOfferAnswerOptions(options: Constraints = {}) {
+export function normalizeOfferOptions(options: object = {}): object {
     const newOptions = {};
 
     if (!options) {
         return newOptions;
     }
 
-    // Support legacy constraints.
-    if (options.mandatory) {
-        options = options.mandatory;
-    }
-
     // Convert standard options into WebRTC internal constant names.
     // See: https://github.com/jitsi/webrtc/blob/0cd6ce4de669bed94ba47b88cb71b9be0341bb81/sdk/media_constraints.cc#L113
-    for (const [key, value] of Object.entries(options)) {
-        const newKey = STANDARD_OA_OPTIONS[key.toLowerCase()];
+    for (const [ key, value ] of Object.entries(options)) {
+        const newKey = STANDARD_OFFER_OPTIONS[key.toLowerCase()];
+
         if (newKey) {
             newOptions[newKey] = String(Boolean(value));
         }
@@ -183,7 +183,7 @@ export function normalizeOfferAnswerOptions(options: Constraints = {}) {
 export function normalizeConstraints(constraints) {
     const c = deepClone(constraints);
 
-    for (const mediaType of ['audio', 'video']) {
+    for (const mediaType of [ 'audio', 'video' ]) {
         const mediaTypeConstraints = c[mediaType];
         const typeofMediaTypeConstraints = typeof mediaTypeConstraints;
 

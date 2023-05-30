@@ -1,22 +1,14 @@
 {
-    "extends": "@tsconfig/react-native/tsconfig.json",
-    "include": [
-        "src/**/*.ts"
-    ],
+    "include": ["src/**/*.ts"],
     "compilerOptions": {
-        "target": "es6",
-        "module": "commonjs",
-        "strict": true,
-        "moduleResolution": "node",
-        "lib": [
-            "es2015",
-            "esnext"
-        ],
-        "jsx": "react-native",
-        "resolveJsonModule": true,
-        "noImplicitAny": false,
+      "target": "es6",
+      "module": "commonjs",
+      "strict": true,
+      "moduleResolution": "node",
+      "lib": ["es2015", "esnext"],
+      "jsx": "react-native",
+      "resolveJsonModule": true,
+      "noImplicitAny": false,
     },
-    "exclude": [
-        "node_modules"
-    ]
+    "exclude": ["node_modules"]
 }

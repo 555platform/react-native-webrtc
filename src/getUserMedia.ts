@@ -1,10 +1,11 @@
 
 import { NativeModules } from 'react-native';
-import * as RTCUtil from './RTCUtil';
+
 
 import MediaStream from './MediaStream';
 import MediaStreamError from './MediaStreamError';
 import permissions from './Permissions';
+import * as RTCUtil from './RTCUtil';
 
 const { WebRTCModule } = NativeModules;
 
@@ -13,7 +14,7 @@ interface Constraints {
     video?: boolean | object;
 }
 
-export default function getUserMedia(constraints: Constraints = {}) {
+export default function getUserMedia(constraints: Constraints = {}): Promise<MediaStream> {
     // According to
     // https://www.w3.org/TR/mediacapture-streams/#dom-mediadevices-getusermedia,
     // the constraints argument is a dictionary of type MediaStreamConstraints.
@@ -32,12 +33,14 @@ export default function getUserMedia(constraints: Constraints = {}) {
     constraints = RTCUtil.normalizeConstraints(constraints);
 
     // Request required permissions
-    const reqPermissions: Array<Promise<boolean>> = [];
+    const reqPermissions: Promise<boolean>[] = [];
+
     if (constraints.audio) {
         reqPermissions.push(permissions.request({ name: 'microphone' }));
     } else {
         reqPermissions.push(Promise.resolve(false));
     }
+
     if (constraints.video) {
         reqPermissions.push(permissions.request({ name: 'camera' }));
     } else {
@@ -46,7 +49,7 @@ export default function getUserMedia(constraints: Constraints = {}) {
 
     return new Promise((resolve, reject) => {
         Promise.all(reqPermissions).then(results => {
-            const [audioPerm, videoPerm] = results;
+            const [ audioPerm, videoPerm ] = results;
 
             // Check permission results and remove unneeded permissions.
 
@@ -57,6 +60,7 @@ export default function getUserMedia(constraints: Constraints = {}) {
                     message: 'Permission denied.',
                     name: 'SecurityError'
                 };
+
                 reject(new MediaStreamError(error));
 
                 return;
@@ -69,6 +73,7 @@ export default function getUserMedia(constraints: Constraints = {}) {
                 // Store initial constraints.
                 for (const trackInfo of tracks) {
                     const c = constraints[trackInfo.kind];
+
                     if (typeof c === 'object') {
                         trackInfo.constraints = RTCUtil.deepClone(c);
                     }
@@ -85,11 +90,13 @@ export default function getUserMedia(constraints: Constraints = {}) {
 
             const failure = (type, message) => {
                 let error;
+
                 switch (type) {
                     case 'TypeError':
                         error = new TypeError(message);
                         break;
                 }
+
                 if (!error) {
                     error = new MediaStreamError({ message, name: type });
                 }

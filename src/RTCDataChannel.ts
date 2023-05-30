@@ -1,20 +1,23 @@
 
-import { NativeModules } from 'react-native';
 import * as base64 from 'base64-js';
 import { defineCustomEventTarget } from 'event-target-shim';
+import { NativeModules } from 'react-native';
+
+import { addListener, removeListener } from './EventEmitter';
 import MessageEvent from './MessageEvent';
 import RTCDataChannelEvent from './RTCDataChannelEvent';
-import EventEmitter from './EventEmitter';
 
 const { WebRTCModule } = NativeModules;
 
 type RTCDataChannelState = 'connecting' | 'open' | 'closing' | 'closed';
 
-const DATA_CHANNEL_EVENTS = ['open', 'message', 'bufferedamountlow', 'closing', 'close', 'error'];
+const DATA_CHANNEL_EVENTS = [ 'open', 'message', 'bufferedamountlow', 'closing', 'close', 'error' ];
 
 export default class RTCDataChannel extends defineCustomEventTarget(...DATA_CHANNEL_EVENTS) {
     _peerConnectionId: number;
     _reactTag: string;
+
+    _bufferedAmount: number;
     _id: number;
     _label: string;
     _maxPacketLifeTime?: number;
@@ -23,11 +26,9 @@ export default class RTCDataChannel extends defineCustomEventTarget(...DATA_CHAN
     _ordered: boolean;
     _protocol: string;
     _readyState: RTCDataChannelState;
-    _subscriptions: Array<any> = [];
 
-    binaryType: string = 'arraybuffer'; // we only support 'arraybuffer'
-    bufferedAmount: number = 0;
-    bufferedAmountLowThreshold: number = 0;
+    binaryType = 'arraybuffer'; // we only support 'arraybuffer'
+    bufferedAmountLowThreshold = 0;
 
     constructor(info) {
         super();
@@ -35,6 +36,7 @@ export default class RTCDataChannel extends defineCustomEventTarget(...DATA_CHAN
         this._peerConnectionId = info.peerConnectionId;
         this._reactTag = info.reactTag;
 
+        this._bufferedAmount = 0;
         this._label = info.label;
         this._id = info.id === -1 ? null : info.id; // null until negotiated.
         this._ordered = Boolean(info.ordered);
@@ -45,6 +47,10 @@ export default class RTCDataChannel extends defineCustomEventTarget(...DATA_CHAN
         this._readyState = info.readyState;
 
         this._registerEvents();
+    }
+
+    get bufferedAmount(): number {
+        return this._bufferedAmount;
     }
 
     get label(): string {
@@ -79,9 +85,13 @@ export default class RTCDataChannel extends defineCustomEventTarget(...DATA_CHAN
         return this._readyState;
     }
 
-    send(data: string | ArrayBuffer | ArrayBufferView) {
+    send(data: string): void;
+    send(data: ArrayBuffer): void;
+    send(data: ArrayBufferView): void;
+    send(data: string | ArrayBuffer | ArrayBufferView): void {
         if (typeof data === 'string') {
             WebRTCModule.dataChannelSend(this._peerConnectionId, this._reactTag, data, 'text');
+
             return;
         }
 
@@ -93,55 +103,75 @@ export default class RTCDataChannel extends defineCustomEventTarget(...DATA_CHAN
         } else {
             throw new TypeError('Data must be either string, ArrayBuffer, or ArrayBufferView');
         }
-        WebRTCModule.dataChannelSend(this._peerConnectionId, this._reactTag, base64.fromByteArray(data as Uint8Array), 'binary');
+
+        const base64data = base64.fromByteArray(data as Uint8Array);
+
+        WebRTCModule.dataChannelSend(this._peerConnectionId, this._reactTag, base64data, 'binary');
     }
 
-    close() {
+    close(): void {
         if (this._readyState === 'closing' || this._readyState === 'closed') {
             return;
         }
+
         WebRTCModule.dataChannelClose(this._peerConnectionId, this._reactTag);
     }
 
-    _unregisterEvents() {
-        this._subscriptions.forEach(e => e.remove());
-        this._subscriptions = [];
-    }
+    _registerEvents(): void {
+        addListener(this, 'dataChannelStateChanged', (ev: any) => {
+            if (ev.reactTag !== this._reactTag) {
+                return;
+            }
 
-    _registerEvents() {
-        this._subscriptions = [
-            EventEmitter.addListener('dataChannelStateChanged', ev => {
-                if (ev.reactTag !== this._reactTag) {
-                    return;
-                }
-                this._readyState = ev.state;
-                if (this._id === null && ev.id !== -1) {
-                    this._id = ev.id;
-                }
-                if (this._readyState === 'open') {
-                    // @ts-ignore
-                    this.dispatchEvent(new RTCDataChannelEvent('open', { channel: this }));
-                } else if (this._readyState === 'closing') {
-                    // @ts-ignore
-                    this.dispatchEvent(new RTCDataChannelEvent('closing', { channel: this }));
-                } else if (this._readyState === 'closed') {
-                    // @ts-ignore
-                    this.dispatchEvent(new RTCDataChannelEvent('close', { channel: this }));
-                    this._unregisterEvents();
-                    WebRTCModule.dataChannelDispose(this._peerConnectionId, this._reactTag);
-                }
-            }),
-            EventEmitter.addListener('dataChannelReceiveMessage', ev => {
-                if (ev.reactTag !== this._reactTag) {
-                    return;
-                }
-                let data = ev.data;
-                if (ev.type === 'binary') {
-                    data = base64.toByteArray(ev.data).buffer;
-                }
+            this._readyState = ev.state;
+
+            if (this._id === null && ev.id !== -1) {
+                this._id = ev.id;
+            }
+
+            if (this._readyState === 'open') {
                 // @ts-ignore
-                this.dispatchEvent(new MessageEvent('message', { data }));
-            })
-        ];
+                this.dispatchEvent(new RTCDataChannelEvent('open', { channel: this }));
+            } else if (this._readyState === 'closing') {
+                // @ts-ignore
+                this.dispatchEvent(new RTCDataChannelEvent('closing', { channel: this }));
+            } else if (this._readyState === 'closed') {
+                // @ts-ignore
+                this.dispatchEvent(new RTCDataChannelEvent('close', { channel: this }));
+
+                // This DataChannel is done, clean up event handlers.
+                removeListener(this);
+
+                WebRTCModule.dataChannelDispose(this._peerConnectionId, this._reactTag);
+            }
+        });
+
+        addListener(this, 'dataChannelReceiveMessage', (ev: any) => {
+            if (ev.reactTag !== this._reactTag) {
+                return;
+            }
+
+            let data = ev.data;
+
+            if (ev.type === 'binary') {
+                data = base64.toByteArray(ev.data).buffer;
+            }
+
+            // @ts-ignore
+            this.dispatchEvent(new MessageEvent('message', { data }));
+        });
+
+        addListener(this, 'dataChannelDidChangeBufferedAmount', (ev: any) => {
+            if (ev.reactTag !== this._reactTag) {
+                return;
+            }
+
+            this._bufferedAmount = ev.bufferedAmount;
+
+            if (this._bufferedAmount < this.bufferedAmountLowThreshold) {
+                // @ts-ignore
+                this.dispatchEvent(new RTCDataChannelEvent('bufferedamountlow', { channel: this }));
+            }
+        });
     }
 }

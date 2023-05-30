@@ -6,7 +6,7 @@ import MediaStreamError from './MediaStreamError';
 
 const { WebRTCModule } = NativeModules;
 
-export default function getDisplayMedia() {
+export default function getDisplayMedia(): Promise<MediaStream> {
     return new Promise((resolve, reject) => {
         WebRTCModule.getDisplayMedia().then(
             data => {
@@ -15,7 +15,7 @@ export default function getDisplayMedia() {
                 const info = {
                     streamId: streamId,
                     streamReactTag: streamId,
-                    tracks: [track]
+                    tracks: [ track ]
                 };
 
                 const stream = new MediaStream(info);

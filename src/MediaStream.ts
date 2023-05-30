@@ -1,19 +1,19 @@
 
-import { NativeModules } from 'react-native';
 import { defineCustomEventTarget } from 'event-target-shim';
-import { uniqueID } from './RTCUtil';
+import { NativeModules } from 'react-native';
 
 import MediaStreamTrack from './MediaStreamTrack';
+import { uniqueID } from './RTCUtil';
 
 const { WebRTCModule } = NativeModules;
 
-const MEDIA_STREAM_EVENTS = ['active', 'inactive', 'addtrack', 'removetrack'];
+const MEDIA_STREAM_EVENTS = [ 'active', 'inactive', 'addtrack', 'removetrack' ];
 
 export default class MediaStream extends defineCustomEventTarget(...MEDIA_STREAM_EVENTS) {
     id: string;
-    active: boolean = true;
+    active = true;
 
-    _tracks: Array<MediaStreamTrack> = [];
+    _tracks: MediaStreamTrack[] = [];
 
     /**
      * The identifier of this MediaStream unique within the associated
@@ -26,7 +26,7 @@ export default class MediaStream extends defineCustomEventTarget(...MEDIA_STREAM
     _reactTag: string;
 
     /**
-     * A MediaStream can be constructed in several ways, depending on the paramters
+     * A MediaStream can be constructed in several ways, depending on the parameters
      * that are passed here.
      *
      * - undefined: just a new stream, with no tracks.
@@ -51,17 +51,20 @@ export default class MediaStream extends defineCustomEventTarget(...MEDIA_STREAM
             WebRTCModule.mediaStreamCreate(this.id);
         } else if (arg instanceof MediaStream) {
             WebRTCModule.mediaStreamCreate(this.id);
+
             for (const track of arg.getTracks()) {
                 this.addTrack(track);
             }
         } else if (Array.isArray(arg)) {
             WebRTCModule.mediaStreamCreate(this.id);
+
             for (const track of arg) {
                 this.addTrack(track);
             }
         } else if (typeof arg === 'object' && arg.streamId && arg.streamReactTag && arg.tracks) {
             this.id = arg.streamId;
             this._reactTag = arg.streamReactTag;
+
             for (const trackInfo of arg.tracks) {
                 // We are not using addTrack here because the track is already part of the
                 // stream, so there is no need to add it on the native side.
@@ -72,25 +75,29 @@ export default class MediaStream extends defineCustomEventTarget(...MEDIA_STREAM
         }
     }
 
-    addTrack(track: MediaStreamTrack) {
+    addTrack(track: MediaStreamTrack): void {
         const index = this._tracks.indexOf(track);
+
         if (index !== -1) {
             return;
         }
+
         this._tracks.push(track);
-        WebRTCModule.mediaStreamAddTrack(this._reactTag, track.id);
+        WebRTCModule.mediaStreamAddTrack(this._reactTag, track.remote ? track._peerConnectionId : -1, track.id);
     }
 
-    removeTrack(track: MediaStreamTrack) {
+    removeTrack(track: MediaStreamTrack): void {
         const index = this._tracks.indexOf(track);
+
         if (index === -1) {
             return;
         }
+
         this._tracks.splice(index, 1);
-        WebRTCModule.mediaStreamRemoveTrack(this._reactTag, track.id);
+        WebRTCModule.mediaStreamRemoveTrack(this._reactTag, track.remote ? track._peerConnectionId : -1, track.id);
     }
 
-    getTracks(): Array<MediaStreamTrack> {
+    getTracks(): MediaStreamTrack[] {
         return this._tracks.slice();
     }
 
@@ -98,26 +105,28 @@ export default class MediaStream extends defineCustomEventTarget(...MEDIA_STREAM
         return this._tracks.find(track => track.id === trackId);
     }
 
-    getAudioTracks(): Array<MediaStreamTrack> {
+    getAudioTracks(): MediaStreamTrack[] {
         return this._tracks.filter(track => track.kind === 'audio');
     }
 
-    getVideoTracks(): Array<MediaStreamTrack> {
+    getVideoTracks(): MediaStreamTrack[] {
         return this._tracks.filter(track => track.kind === 'video');
     }
 
-    clone() {
+    clone(): never {
         throw new Error('Not implemented.');
     }
 
-    toURL() {
+    toURL(): string {
         return this._reactTag;
     }
 
-    release(releaseTracks = true) {
-        const tracks = [...this._tracks];
+    release(releaseTracks = true): void {
+        const tracks = [ ...this._tracks ];
+
         for (const track of tracks) {
             this.removeTrack(track);
+
             if (releaseTracks) {
                 track.release();
             }
