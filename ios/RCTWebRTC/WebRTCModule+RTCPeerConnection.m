@@ -14,6 +14,8 @@
 #import <WebRTC/RTCRtpTransceiver.h>
 #import <WebRTC/RTCSessionDescription.h>
 #import <WebRTC/RTCStatisticsReport.h>
+#import <WebRTC/RTCAudioSession.h>
+#import <WebRTC/RTCRtpSender.h>
 
 #import "SerializeUtils.h"
 #import "WebRTCModule+RTCDataChannel.h"
@@ -545,6 +547,31 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(peerConnectionRemoveTrack
     });
 
     return @(ret);
+}
+
+RCT_EXPORT_METHOD(peerConnectionSendDTMF:(nonnull NSString *)tone objectID:(nonnull NSNumber *)objectID)
+{
+  //   NSLog(@"Webrtc :: peerConnectionSendDTMF");
+  RTCPeerConnection *peerConnection = self.peerConnections[objectID];
+  if (!peerConnection) {
+    return;
+  }
+
+   RTCRtpSender *sender = peerConnection.senders[0];
+  [sender.dtmfSender insertDtmf:tone duration:1 interToneGap:0.055];
+}
+
+RCT_EXPORT_METHOD(initializeAudio:(BOOL) value)
+{
+ //   NSLog(@"Webrtc :: initialize audio");
+    RTCAudioSession *session = [RTCAudioSession sharedInstance];
+    session.useManualAudio = value;
+}
+
+RCT_EXPORT_METHOD(enableAudio:(BOOL) value)
+{
+  //  NSLog(@"Webrtc :: enable audio");
+    [RTCAudioSession sharedInstance].isAudioEnabled = value;
 }
 
 // TODO: move these below to some SerializeUtils file
