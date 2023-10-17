@@ -1,4 +1,6 @@
-# react-native-webrtc
+# react-native-webrtc (This branch is parked)
+
+## This branch was created to upgrade the react-native-webrtc from Plan-B support to Unified Plan. Currently we are not using this branch in any of our SDK. No plans to use this branch for future projects.
 
 [![npm version](https://badge.fury.io/js/react-native-webrtc.svg)](https://badge.fury.io/js/react-native-webrtc)
 [![npm downloads](https://img.shields.io/npm/dm/react-native-webrtc.svg?maxAge=2592000)](https://img.shields.io/npm/dm/react-native-webrtc.svg?maxAge=2592000)
